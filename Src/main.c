@@ -97,15 +97,15 @@ int main(void)
   while (1)
   {
 	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET);
-	  HAL_Delay(500);
+	  HAL_Delay(400);
 	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_RESET);
-	  HAL_Delay(200);
+	  HAL_Delay(150);
 	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET);
-	  HAL_Delay(500);
+	  HAL_Delay(400);
 	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_RESET);
-	  HAL_Delay(200);
+	  HAL_Delay(150);
 	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET);
-	  HAL_Delay(500);
+	  HAL_Delay(400);
 	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_RESET);
 	  HAL_Delay(3000);
 
