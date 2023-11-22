@@ -26,6 +26,7 @@
 #include <math.h>
 
 #include "poor_posture_detected.cpp"
+#include "alert_motor_config.c"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -179,11 +180,7 @@ void use_sensor3(){
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_SET);
 }
 
-void alert_user(){
-	AL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET);
-	HAL_Delay(1000);
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_RESET);
-}
+
 
 
 /* USER CODE END 0 */
@@ -274,21 +271,6 @@ int main(void)
 	  if (should_alert(angleY1, angleY2, angleY3)) {
 		  alert_user();
 	  }
-
-//	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET);
-//	  HAL_Delay(400);
-//	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_RESET);
-//	  HAL_Delay(150);
-//	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET);
-//	  HAL_Delay(400);
-//	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_RESET);
-//	  HAL_Delay(150);
-//	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET);
-//	  HAL_Delay(400);
-//	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_RESET);
-//	  HAL_Delay(50);
-
-
 
     /* USER CODE END WHILE */
 
