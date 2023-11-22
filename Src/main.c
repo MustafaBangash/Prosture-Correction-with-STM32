@@ -24,6 +24,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <math.h>
+
+#include "poor_posture_detected.cpp"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -71,7 +73,9 @@ static void MX_I2C1_Init(void);
 #define GYRO_XOUT_H_REG 0x43
 #define PWR_MGMT_1_REG 0x6B
 #define WHO_AM_I_REG 0x75
-#define MPU6050_ADDR 0x68
+#define MPU6050_ADDR0 0x68
+#define MPU6050_ADDR1 0x69
+
 
 int16_t Accel_X_RAW = 0;
 int16_t Accel_Y_RAW = 0;
@@ -89,13 +93,17 @@ float Gx = 0.0f;
 float Gy = 0.0f;
 float Gz = 0.0f;
 
-float angleX = 0.0f;
-float angleY = 0.0f;
+float angleX1 = 0.0f;
+float angleY1 = 0.0f;
+float angleX2 = 0.0f;
+float angleY2 = 0.0f;
+float angleX3 = 0.0f;
+float angleY3 = 0.0f;
 float accelAngleX = 0.0f;
 float accelAngleY = 0.0f;
 float lastTime = 0.0f;
 
-void MPU6050_Init (void){
+void MPU6050_Init (uint8_t sensor_addr){
 	uint8_t check, Data;
 	HAL_I2C_Mem_Read (&hi2c1, MPU6050_ADDR, WHO_AM_I_REG, 1, &check, 1, 1000);
 	HAL_Delay(500);
@@ -114,7 +122,7 @@ void MPU6050_Init (void){
 	}
 }
 
-void MPU6050_Read_Accel (void) {
+void MPU6050_Read_Accel (uint8_t sensor_addr) {
 
 	uint8_t Rec_Data[6] = {0};
 	HAL_I2C_Mem_Read (&hi2c1, MPU6050_ADDR << 1, ACCEL_XOUT_H_REG, 1, Rec_Data, 6, 1000);
@@ -128,7 +136,7 @@ void MPU6050_Read_Accel (void) {
 	Az = Accel_Z_RAW/16384.0;
 }
 
-void MPU6050_Read_Gyro (void) {
+void MPU6050_Read_Gyro (uint8_t sensor_addr) {
 
 	uint8_t Rec_Data[6] = {0};
 	HAL_I2C_Mem_Read (&hi2c1, MPU6050_ADDR << 1, GYRO_XOUT_H_REG, 1, Rec_Data, 6, 1000);
@@ -151,6 +159,32 @@ void print_sensor_values() {
     // Transmit the string over UART
     HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), 1000);
 }
+
+void use_sensor1(){
+	// Use MPU6050_ADDR0
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_SET);
+}
+
+void use_sensor2(){
+	// Use MPU6050_ADDR1
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_RESET);
+
+}
+
+void use_sensor3(){
+	// Use MPU6050_ADDR1
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_SET);
+}
+
+void alert_user(){
+	AL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET);
+	HAL_Delay(1000);
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_RESET);
+}
+
 
 /* USER CODE END 0 */
 
@@ -184,14 +218,12 @@ int main(void)
   MX_USART2_UART_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
-  MPU6050_Init();
-  MPU6050_Read_Accel();
-  MPU6050_Read_Gyro();
-  print_sensor_values();
-
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_SET);
+  use_sensor1();
+  MPU6050_Init(MPU6050_ADDR0);
+  use_sensor2();
+  MPU6050_Init(MPU6050_ADDR1);
+  use_sensor3();
+  MPU6050_Init(MPU6050_ADDR1);
 
   float angleX = 0.0f;
   float angleY = 0.0f;
@@ -203,26 +235,45 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
+	  print_sensor_values();
 	  uint32_t now = HAL_GetTick();
 	  float dt = (now - lastTime) / 1000.0f; // Convert milliseconds to seconds
 
-	  MPU6050_Read_Accel();
-	  MPU6050_Read_Gyro();
-
+	  use_sensor1();
+	  MPU6050_Read_Accel(MPU6050_ADDR0);
+	  MPU6050_Read_Gyro(MPU6050_ADDR0);
 	  // Calculate angle using accelerometer
 	  accelAngleX = atan2(Ay, Az) * 180.0 / M_PI;
 	  accelAngleY = atan2(-Ax, sqrt(Ay * Ay + Az * Az)) * 180.0 / M_PI;
-
 	  // Integrating gyro data to calculate angles
-	  angleX = 0.98 * (angleX + Gx * dt) + 0.02 * accelAngleX;
-	  angleY = 0.98 * (angleY + Gy * dt) + 0.02 * accelAngleY;
+	  angleX1 = 0.98 * (angleX + Gx * dt) + 0.02 * accelAngleX;
+	  angleY1 = 0.98 * (angleY + Gy * dt) + 0.02 * accelAngleY;
 
-	  // Print the calculated angles along with sensor values
-	  print_sensor_values();
+	  use_sensor2();
+	  MPU6050_Read_Accel(MPU6050_ADDR1);
+	  MPU6050_Read_Gyro(MPU6050_ADDR1);
+	  // Calculate angle using accelerometer
+	  accelAngleX = atan2(Ay, Az) * 180.0 / M_PI;
+	  accelAngleY = atan2(-Ax, sqrt(Ay * Ay + Az * Az)) * 180.0 / M_PI;
+	  // Integrating gyro data to calculate angles
+	  angleX2 = 0.98 * (angleX + Gx * dt) + 0.02 * accelAngleX;
+	  angleY2 = 0.98 * (angleY + Gy * dt) + 0.02 * accelAngleY;
+
+	  use_sensor2();
+	  MPU6050_Read_Accel(MPU6050_ADDR1);
+	  MPU6050_Read_Gyro(MPU6050_ADDR1);
+	  // Calculate angle using accelerometer
+	  accelAngleX = atan2(Ay, Az) * 180.0 / M_PI;
+	  accelAngleY = atan2(-Ax, sqrt(Ay * Ay + Az * Az)) * 180.0 / M_PI;
+	  // Integrating gyro data to calculate angles
+	  angleX3 = 0.98 * (angleX + Gx * dt) + 0.02 * accelAngleX;
+	  angleY3 = 0.98 * (angleY + Gy * dt) + 0.02 * accelAngleY;
 
 	  lastTime = now; // Update the last measurement time
 
+	  if (should_alert(angleY1, angleY2, angleY3)) {
+		  alert_user();
+	  }
 
 //	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET);
 //	  HAL_Delay(400);
